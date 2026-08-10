@@ -5,6 +5,8 @@ import com.smarttask.common.exception.DuplicateResourceException;
 import com.smarttask.common.exception.ForbiddenException;
 import com.smarttask.common.exception.ResourceNotFoundException;
 import com.smarttask.common.exception.UnauthorizedException;
+import com.smarttask.notification.entity.NotificationType;
+import com.smarttask.notification.service.NotificationService;
 import com.smarttask.project.dto.AddProjectMemberRequest;
 import com.smarttask.project.dto.CreateProjectRequest;
 import com.smarttask.project.dto.ProjectMemberResponse;
@@ -31,19 +33,24 @@ public class ProjectService {
     private final ProjectRepository projectRepository;
     private final ProjectMemberRepository projectMemberRepository;
     private final UserRepository userRepository;
+    private final NotificationService notificationService;
 
     public ProjectService(
             ProjectRepository projectRepository,
             ProjectMemberRepository projectMemberRepository,
-            UserRepository userRepository) {
+            UserRepository userRepository,
+            NotificationService notificationService) {
+
         this.projectRepository = projectRepository;
         this.projectMemberRepository = projectMemberRepository;
         this.userRepository = userRepository;
+        this.notificationService = notificationService;
     }
 
     @Transactional
     public ProjectResponse createProject(CreateProjectRequest request) {
         User currentUser = getCurrentUser();
+
         Project project = Project.builder()
                 .name(request.getName())
                 .description(request.getDescription())
@@ -52,11 +59,13 @@ public class ProjectService {
                 .build();
 
         Project savedProject = projectRepository.save(project);
+
         ProjectMember ownerMember = ProjectMember.builder()
                 .project(savedProject)
                 .user(currentUser)
                 .role(ProjectRole.OWNER)
                 .build();
+
         projectMemberRepository.save(ownerMember);
 
         return toResponse(savedProject);
@@ -66,12 +75,14 @@ public class ProjectService {
     public ProjectResponse getProjectById(Long projectId) {
         Project project = getProject(projectId);
         requireMembership(project);
+
         return toResponse(project);
     }
 
     @Transactional(readOnly = true)
     public List<ProjectResponse> listAccessibleProjects() {
         User currentUser = getCurrentUser();
+
         return projectRepository.findAccessibleProjects(currentUser)
                 .stream()
                 .map(this::toResponse)
@@ -79,7 +90,10 @@ public class ProjectService {
     }
 
     @Transactional
-    public ProjectResponse updateProject(Long projectId, UpdateProjectRequest request) {
+    public ProjectResponse updateProject(
+            Long projectId,
+            UpdateProjectRequest request) {
+
         Project project = getProject(projectId);
         requireOwner(project);
 
@@ -94,23 +108,30 @@ public class ProjectService {
     public void deleteProject(Long projectId) {
         Project project = getProject(projectId);
         requireOwner(project);
+
         projectRepository.delete(project);
     }
 
     @Transactional
-    public ProjectResponse addProjectMember(Long projectId, AddProjectMemberRequest request) {
+    public ProjectResponse addProjectMember(
+            Long projectId,
+            AddProjectMemberRequest request) {
+
         Project project = getProject(projectId);
         requireOwner(project);
 
         if (request.getRole() == ProjectRole.OWNER) {
-            throw new BadRequestException("A project can only have one owner");
+            throw new BadRequestException(
+                    "A project can only have one owner");
         }
 
         User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("User not found"));
 
         if (projectMemberRepository.existsByProjectAndUser(project, user)) {
-            throw new DuplicateResourceException("User is already a project member");
+            throw new DuplicateResourceException(
+                    "User is already a project member");
         }
 
         ProjectMember member = ProjectMember.builder()
@@ -118,56 +139,95 @@ public class ProjectService {
                 .user(user)
                 .role(request.getRole())
                 .build();
+
         projectMemberRepository.save(member);
+
+        notificationService.createNotification(
+                user,
+                NotificationType.PROJECT_MEMBER_ADDED,
+                "You have been added to project: " + project.getName());
 
         return toResponse(project);
     }
 
     @Transactional
-    public ProjectResponse removeProjectMember(Long projectId, Long userId) {
+    public ProjectResponse removeProjectMember(
+            Long projectId,
+            Long userId) {
+
         Project project = getProject(projectId);
         requireOwner(project);
 
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
-        ProjectMember member = projectMemberRepository.findByProjectAndUser(project, user)
-                .orElseThrow(() -> new ResourceNotFoundException("Project member not found"));
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("User not found"));
+
+        ProjectMember member =
+                projectMemberRepository.findByProjectAndUser(project, user)
+                        .orElseThrow(() ->
+                                new ResourceNotFoundException(
+                                        "Project member not found"));
 
         if (member.getRole() == ProjectRole.OWNER) {
-            throw new BadRequestException("Project owner cannot be removed");
+            throw new BadRequestException(
+                    "Project owner cannot be removed");
         }
 
         projectMemberRepository.delete(member);
+
         return toResponse(project);
     }
 
     private Project getProject(Long projectId) {
         return projectRepository.findById(projectId)
-                .orElseThrow(() -> new ResourceNotFoundException("Project not found"));
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "Project not found"));
     }
 
     private void requireMembership(Project project) {
         User currentUser = getCurrentUser();
-        if (!projectMemberRepository.existsByProjectAndUser(project, currentUser)) {
-            throw new ForbiddenException("You do not have access to this project");
+
+        if (!projectMemberRepository.existsByProjectAndUser(
+                project,
+                currentUser)) {
+
+            throw new ForbiddenException(
+                    "You do not have access to this project");
         }
     }
 
     private void requireOwner(Project project) {
         User currentUser = getCurrentUser();
-        if (!projectMemberRepository.existsByProjectAndUserAndRole(project, currentUser, ProjectRole.OWNER)) {
-            throw new ForbiddenException("Project owner permission is required");
+
+        if (!projectMemberRepository
+                .existsByProjectAndUserAndRole(
+                        project,
+                        currentUser,
+                        ProjectRole.OWNER)) {
+
+            throw new ForbiddenException(
+                    "Project owner permission is required");
         }
     }
 
     private User getCurrentUser() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null || !authentication.isAuthenticated()) {
-            throw new UnauthorizedException("Authentication is required");
+        Authentication authentication =
+                SecurityContextHolder
+                        .getContext()
+                        .getAuthentication();
+
+        if (authentication == null
+                || !authentication.isAuthenticated()) {
+
+            throw new UnauthorizedException(
+                    "Authentication is required");
         }
 
         return userRepository.findByEmail(authentication.getName())
-                .orElseThrow(() -> new UnauthorizedException("Authenticated user not found"));
+                .orElseThrow(() ->
+                        new UnauthorizedException(
+                                "Authenticated user not found"));
     }
 
     private ProjectResponse toResponse(Project project) {
@@ -177,16 +237,20 @@ public class ProjectService {
                 .description(project.getDescription())
                 .status(project.getStatus())
                 .owner(toUserResponse(project.getOwner()))
-                .members(projectMemberRepository.findByProjectOrderByIdAsc(project)
-                        .stream()
-                        .map(this::toMemberResponse)
-                        .toList())
+                .members(
+                        projectMemberRepository
+                                .findByProjectOrderByIdAsc(project)
+                                .stream()
+                                .map(this::toMemberResponse)
+                                .toList())
                 .createdAt(project.getCreatedAt())
                 .updatedAt(project.getUpdatedAt())
                 .build();
     }
 
-    private ProjectMemberResponse toMemberResponse(ProjectMember member) {
+    private ProjectMemberResponse toMemberResponse(
+            ProjectMember member) {
+
         return ProjectMemberResponse.builder()
                 .id(member.getId())
                 .user(toUserResponse(member.getUser()))

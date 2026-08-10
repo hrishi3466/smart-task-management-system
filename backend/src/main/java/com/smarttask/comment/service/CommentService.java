@@ -1,5 +1,7 @@
 package com.smarttask.comment.service;
 
+import com.smarttask.notification.entity.NotificationType;
+import com.smarttask.notification.service.NotificationService;
 import com.smarttask.comment.dto.CommentResponse;
 import com.smarttask.comment.dto.CreateCommentRequest;
 import com.smarttask.comment.dto.UpdateCommentRequest;
@@ -22,24 +24,31 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class CommentService {
 
-    private final CommentRepository commentRepository;
-    private final TaskRepository taskRepository;
-    private final ProjectMemberRepository projectMemberRepository;
-    private final UserRepository userRepository;
+private final CommentRepository commentRepository;
+private final TaskRepository taskRepository;
+private final ProjectMemberRepository projectMemberRepository;
+private final UserRepository userRepository;
+private final NotificationService notificationService;
 
-    public CommentService(
-            CommentRepository commentRepository,
-            TaskRepository taskRepository,
-            ProjectMemberRepository projectMemberRepository,
-            UserRepository userRepository) {
-        this.commentRepository = commentRepository;
-        this.taskRepository = taskRepository;
-        this.projectMemberRepository = projectMemberRepository;
-        this.userRepository = userRepository;
-    }
+public CommentService(
+        CommentRepository commentRepository,
+        TaskRepository taskRepository,
+        ProjectMemberRepository projectMemberRepository,
+        UserRepository userRepository,
+        NotificationService notificationService) {
+
+    this.commentRepository = commentRepository;
+    this.taskRepository = taskRepository;
+    this.projectMemberRepository = projectMemberRepository;
+    this.userRepository = userRepository;
+    this.notificationService = notificationService;
+}
 
     @Transactional
-    public CommentResponse createComment(Long taskId, CreateCommentRequest request) {
+    public CommentResponse createComment(
+            Long taskId,
+            CreateCommentRequest request) {
+
         Task task = getTask(taskId);
         User currentUser = getCurrentUser();
 
@@ -51,7 +60,22 @@ public class CommentService {
                 .content(request.getContent())
                 .build();
 
-        return toResponse(commentRepository.save(comment));
+        TaskComment savedComment = commentRepository.save(comment);
+
+        User assignee = task.getAssignee();
+
+        if (assignee != null
+                && !assignee.getId().equals(currentUser.getId())) {
+
+            notificationService.createNotification(
+                    assignee,
+                    NotificationType.COMMENT_ADDED,
+                    currentUser.getName()
+                            + " added a comment to task: "
+                            + task.getTitle());
+        }
+
+        return toResponse(savedComment);
     }
 
     @Transactional(readOnly = true)

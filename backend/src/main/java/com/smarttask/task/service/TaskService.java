@@ -1,5 +1,7 @@
 package com.smarttask.task.service;
 
+import com.smarttask.notification.entity.NotificationType;
+import com.smarttask.notification.service.NotificationService;
 import com.smarttask.common.exception.ForbiddenException;
 import com.smarttask.common.exception.ResourceNotFoundException;
 import com.smarttask.common.exception.UnauthorizedException;
@@ -29,21 +31,25 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class TaskService {
 
-    private final TaskRepository taskRepository;
-    private final ProjectRepository projectRepository;
-    private final ProjectMemberRepository projectMemberRepository;
-    private final UserRepository userRepository;
+private final TaskRepository taskRepository;
+private final ProjectRepository projectRepository;
+private final ProjectMemberRepository projectMemberRepository;
+private final UserRepository userRepository;
+private final NotificationService notificationService;
 
     public TaskService(
-            TaskRepository taskRepository,
-            ProjectRepository projectRepository,
-            ProjectMemberRepository projectMemberRepository,
-            UserRepository userRepository) {
-        this.taskRepository = taskRepository;
-        this.projectRepository = projectRepository;
-        this.projectMemberRepository = projectMemberRepository;
-        this.userRepository = userRepository;
-    }
+        TaskRepository taskRepository,
+        ProjectRepository projectRepository,
+        ProjectMemberRepository projectMemberRepository,
+        UserRepository userRepository,
+        NotificationService notificationService) {
+
+    this.taskRepository = taskRepository;
+    this.projectRepository = projectRepository;
+    this.projectMemberRepository = projectMemberRepository;
+    this.userRepository = userRepository;
+    this.notificationService = notificationService;
+}
 
     @Transactional
     public TaskResponse createTask(Long projectId, CreateTaskRequest request) {
@@ -107,7 +113,19 @@ public class TaskService {
     public TaskResponse assignTask(Long taskId, AssignTaskRequest request) {
         Task task = getTask(taskId);
         requireOwner(task.getProject());
-        task.setAssignee(resolveRequiredAssignee(task.getProject(), request.getAssigneeId()));
+
+        User assignee =
+                resolveRequiredAssignee(
+                        task.getProject(),
+                        request.getAssigneeId());
+
+        task.setAssignee(assignee);
+
+        notificationService.createNotification(
+                assignee,
+                NotificationType.TASK_ASSIGNED,
+                "You have been assigned a new task: " + task.getTitle());
+
         return toResponse(task);
     }
 
@@ -115,7 +133,24 @@ public class TaskService {
     public TaskResponse changeStatus(Long taskId, ChangeTaskStatusRequest request) {
         Task task = getTask(taskId);
         requireOwner(task.getProject());
+
+        TaskStatus oldStatus = task.getStatus();
+
         task.setStatus(request.getStatus());
+
+        if (task.getAssignee() != null
+                && oldStatus != request.getStatus()) {
+
+            notificationService.createNotification(
+                    task.getAssignee(),
+                    NotificationType.TASK_STATUS_CHANGED,
+                    "Task '" + task.getTitle()
+                            + "' status changed from "
+                            + oldStatus
+                            + " to "
+                            + request.getStatus());
+        }
+
         return toResponse(task);
     }
 

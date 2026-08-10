@@ -1,11 +1,14 @@
 package com.smarttask.user.service;
 
 import com.smarttask.common.exception.DuplicateResourceException;
+import com.smarttask.common.exception.UnauthorizedException;
 import com.smarttask.user.dto.RegisterRequest;
 import com.smarttask.user.dto.UserResponse;
 import com.smarttask.user.entity.Role;
 import com.smarttask.user.entity.User;
 import com.smarttask.user.repository.UserRepository;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,15 +19,20 @@ public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
 
-    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder) {
+    public UserService(
+            UserRepository userRepository,
+            PasswordEncoder passwordEncoder) {
+
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
     }
 
     @Transactional
     public User registerUser(RegisterRequest request) {
+
         if (userRepository.existsByEmail(request.getEmail())) {
-            throw new DuplicateResourceException("Email is already registered");
+            throw new DuplicateResourceException(
+                    "Email is already registered");
         }
 
         User user = User.builder()
@@ -37,7 +45,31 @@ public class UserService {
         return userRepository.save(user);
     }
 
+    @Transactional(readOnly = true)
+    public UserResponse getCurrentUser() {
+
+        Authentication authentication =
+                SecurityContextHolder
+                        .getContext()
+                        .getAuthentication();
+
+        if (authentication == null
+                || !authentication.isAuthenticated()) {
+
+            throw new UnauthorizedException(
+                    "Authentication is required");
+        }
+
+        User user = userRepository.findByEmail(authentication.getName())
+                .orElseThrow(() ->
+                        new UnauthorizedException(
+                                "Authenticated user not found"));
+
+        return toResponse(user);
+    }
+
     public UserResponse toResponse(User user) {
+
         return UserResponse.builder()
                 .id(user.getId())
                 .name(user.getName())
