@@ -50,6 +50,11 @@ public class GlobalExceptionHandler {
         return buildErrorResponse(HttpStatus.UNAUTHORIZED, exception.getMessage());
     }
 
+    @ExceptionHandler(ForbiddenException.class)
+    public ResponseEntity<ErrorResponse> handleForbiddenException(ForbiddenException exception) {
+        return buildErrorResponse(HttpStatus.FORBIDDEN, exception.getMessage());
+    }
+
     /**
      * Handles requests that attempt to create a resource that already exists.
      *
