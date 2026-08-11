@@ -7,16 +7,19 @@ import { EmptyState } from '../common/EmptyState';
 /**
  * Projects Grid Component for Dashboard displaying real completion ratios
  */
+/**
+ * Projects Grid Component for Dashboard displaying real completion ratios
+ */
 export const ProjectQuickGrid = ({ projects = [], projectTaskStats = {} }) => {
   if (!projects || projects.length === 0) {
     return (
-      <div className="card" style={{ padding: 'var(--space-6)' }}>
-        <h2 style={{ fontSize: 16, fontWeight: 600, marginBottom: 'var(--space-4)' }}>
+      <div className="card" style={{ padding: 'var(--space-6)', borderRadius: 'var(--radius-lg)' }}>
+        <h2 style={{ fontSize: 16, fontWeight: 700, marginBottom: 'var(--space-4)', fontFamily: 'var(--font-display)' }}>
           Active Projects
         </h2>
         <EmptyState
-          title="No projects available"
-          description="You are currently not a member of any projects."
+          title="No active projects"
+          description="You are currently not a member of any active project workspaces."
           icon={FolderKanban}
         />
       </div>
@@ -32,12 +35,14 @@ export const ProjectQuickGrid = ({ projects = [], projectTaskStats = {} }) => {
           justifyContent: 'space-between',
         }}
       >
-        <h2 style={{ fontSize: 16, fontWeight: 600 }}>Active Projects</h2>
+        <h2 style={{ fontSize: 18, fontWeight: 700, margin: 0, fontFamily: 'var(--font-display)', color: 'var(--color-text-primary)' }}>
+          Active Projects
+        </h2>
         <Link
           to="/projects"
           style={{
             fontSize: 13,
-            fontWeight: 500,
+            fontWeight: 600,
             color: 'var(--color-primary)',
             display: 'inline-flex',
             alignItems: 'center',
@@ -68,14 +73,19 @@ export const ProjectQuickGrid = ({ projects = [], projectTaskStats = {} }) => {
               style={{ textDecoration: 'none', color: 'inherit' }}
             >
               <div
-                className="card"
+                className="card project-grid-card"
                 style={{
                   height: '100%',
                   display: 'flex',
                   flexDirection: 'column',
                   justifyContent: 'space-between',
-                  gap: var_space_3(),
-                  transition: 'border-color 0.15s ease, box-shadow 0.15s ease',
+                  gap: 'var(--space-4)',
+                  padding: 'var(--space-5)',
+                  backgroundColor: 'var(--color-bg-surface)',
+                  border: '1px solid var(--color-border)',
+                  borderRadius: 'var(--radius-lg)',
+                  boxShadow: 'var(--shadow-sm)',
+                  transition: 'all var(--transition-fast)',
                 }}
               >
                 <div>
@@ -85,10 +95,12 @@ export const ProjectQuickGrid = ({ projects = [], projectTaskStats = {} }) => {
                       alignItems: 'flex-start',
                       justifyContent: 'space-between',
                       gap: 8,
-                      marginBottom: 6,
+                      marginBottom: 8,
                     }}
                   >
-                    <h3 style={{ fontSize: 15, fontWeight: 600 }}>{project.name}</h3>
+                    <h3 style={{ fontSize: 15, fontWeight: 700, margin: 0, fontFamily: 'var(--font-display)', color: 'var(--color-text-primary)' }}>
+                      {project.name}
+                    </h3>
                     <StatusBadge status={project.status} />
                   </div>
                   {project.description && (
@@ -100,6 +112,7 @@ export const ProjectQuickGrid = ({ projects = [], projectTaskStats = {} }) => {
                         WebkitLineClamp: 2,
                         WebkitBoxOrient: 'vertical',
                         overflow: 'hidden',
+                        lineHeight: 1.4,
                       }}
                     >
                       {project.description}
@@ -115,11 +128,11 @@ export const ProjectQuickGrid = ({ projects = [], projectTaskStats = {} }) => {
                       justifyContent: 'space-between',
                       fontSize: 12,
                       color: 'var(--color-text-muted)',
-                      marginBottom: 4,
+                      marginBottom: 6,
                     }}
                   >
                     <span>Completion</span>
-                    <span style={{ fontWeight: 600, color: 'var(--color-text-secondary)' }}>
+                    <span style={{ fontWeight: 600, color: 'var(--color-text-primary)' }}>
                       {percent}% ({stats.completed}/{stats.total})
                     </span>
                   </div>
@@ -151,7 +164,7 @@ export const ProjectQuickGrid = ({ projects = [], projectTaskStats = {} }) => {
                       gap: 6,
                       fontSize: 12,
                       color: 'var(--color-text-muted)',
-                      marginTop: 10,
+                      marginTop: 12,
                     }}
                   >
                     <Users size={14} />
@@ -166,7 +179,3 @@ export const ProjectQuickGrid = ({ projects = [], projectTaskStats = {} }) => {
     </div>
   );
 };
-
-function var_space_3() {
-  return 'var(--space-3)';
-}

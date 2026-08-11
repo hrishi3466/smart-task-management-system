@@ -12,8 +12,8 @@ import { EmptyState } from '../common/EmptyState';
 export const RecentTasksList = ({ tasks = [] }) => {
   if (!tasks || tasks.length === 0) {
     return (
-      <div className="card" style={{ padding: 'var(--space-6)' }}>
-        <h2 style={{ fontSize: 16, fontWeight: 600, marginBottom: 'var(--space-4)' }}>
+      <div className="card" style={{ padding: 'var(--space-6)', borderRadius: 'var(--radius-lg)' }}>
+        <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 'var(--space-4)', fontFamily: 'var(--font-display)', color: 'var(--color-text-primary)' }}>
           My Assigned Tasks
         </h2>
         <EmptyState
@@ -26,21 +26,33 @@ export const RecentTasksList = ({ tasks = [] }) => {
   }
 
   return (
-    <div className="card" style={{ padding: 'var(--space-5)' }}>
+    <div
+      className="card"
+      style={{
+        padding: 'var(--space-5)',
+        backgroundColor: 'var(--color-bg-surface)',
+        border: '1px solid var(--color-border)',
+        borderRadius: 'var(--radius-lg)',
+        boxShadow: 'var(--shadow-sm)',
+      }}
+    >
       <div
         style={{
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          marginBottom: 'var(--space-4)',
+          marginBottom: 'var(--space-3)',
+          paddingBottom: 'var(--space-2)',
         }}
       >
-        <h2 style={{ fontSize: 16, fontWeight: 600 }}>My Assigned Tasks</h2>
+        <h2 style={{ fontSize: 18, fontWeight: 700, margin: 0, fontFamily: 'var(--font-display)', color: 'var(--color-text-primary)' }}>
+          My Assigned Tasks
+        </h2>
         <Link
           to="/my-tasks"
           style={{
             fontSize: 13,
-            fontWeight: 500,
+            fontWeight: 600,
             color: 'var(--color-primary)',
             display: 'inline-flex',
             alignItems: 'center',
@@ -51,27 +63,30 @@ export const RecentTasksList = ({ tasks = [] }) => {
         </Link>
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-        {tasks.map((task) => {
+      <div style={{ display: 'flex', flexDirection: 'column' }}>
+        {tasks.map((task, index) => {
           const overdue = isOverdue(task.dueDate, task.status);
+          const isLast = index === tasks.length - 1;
+
           return (
             <div
               key={task.id}
+              className="recent-task-row"
               style={{
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
-                padding: 'var(--space-3) var(--space-4)',
-                backgroundColor: 'var(--color-bg-subtle)',
+                padding: '12px 8px',
+                borderBottom: isLast ? 'none' : '1px solid var(--color-border)',
                 borderRadius: 'var(--radius-md)',
-                border: '1px solid var(--color-border)',
                 gap: 12,
+                transition: 'background-color var(--transition-fast)',
               }}
             >
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div
                   style={{
-                    fontSize: 14,
+                    fontSize: 13,
                     fontWeight: 600,
                     color: 'var(--color-text-primary)',
                     whiteSpace: 'nowrap',
@@ -84,7 +99,8 @@ export const RecentTasksList = ({ tasks = [] }) => {
                 {task.dueDate && (
                   <div
                     style={{
-                      fontSize: 12,
+                      fontSize: 11,
+                      fontWeight: overdue ? 600 : 400,
                       color: overdue ? 'var(--color-danger)' : 'var(--color-text-muted)',
                       marginTop: 2,
                       display: 'flex',
@@ -92,7 +108,7 @@ export const RecentTasksList = ({ tasks = [] }) => {
                       gap: 4,
                     }}
                   >
-                    <Clock size={12} />
+                    <Clock size={11} />
                     <span>
                       Due {formatDate(task.dueDate)} {overdue ? '(Overdue)' : ''}
                     </span>
@@ -100,7 +116,7 @@ export const RecentTasksList = ({ tasks = [] }) => {
                 )}
               </div>
 
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
                 <PriorityBadge priority={task.priority} />
                 <StatusBadge status={task.status} />
               </div>
@@ -111,3 +127,4 @@ export const RecentTasksList = ({ tasks = [] }) => {
     </div>
   );
 };
+

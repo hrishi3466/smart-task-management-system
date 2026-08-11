@@ -13,6 +13,7 @@ import { isOverdue } from '../../utils/dateUtils';
 
 /**
  * Dashboard Page Component displaying calculated real metrics from backend APIs
+ * Transformed with SaaS product hierarchy, welcome header, and responsive layout.
  */
 export const DashboardPage = () => {
   const { currentUser } = useAuth();
@@ -81,7 +82,7 @@ export const DashboardPage = () => {
   }, [fetchDashboardData]);
 
   if (isLoading) {
-    return <LoadingSpinner fullPage message="Loading dashboard metrics..." />;
+    return <LoadingSpinner fullPage message="Loading workspace dashboard..." />;
   }
 
   if (errorMsg) {
@@ -95,8 +96,28 @@ export const DashboardPage = () => {
   const overdueAssignedTasks = assignedTasks.filter((t) => isOverdue(t.dueDate, t.status)).length;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
-      {/* Metric Cards Grid */}
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }} className="dashboard-container">
+      {/* Welcome Header */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: 'var(--space-3)',
+        }}
+      >
+        <div>
+          <h1 style={{ fontSize: 24, fontWeight: 700, margin: 0, fontFamily: 'var(--font-display)', color: 'var(--color-text-primary)' }}>
+            Welcome back, {currentUser?.name || 'User'}! 👋
+          </h1>
+          <p style={{ fontSize: 14, color: 'var(--color-text-secondary)', margin: '4px 0 0 0' }}>
+            Here is an overview of your active project workspaces, assigned tasks, and completion velocity.
+          </p>
+        </div>
+      </div>
+
+      {/* Metric Summary Cards Grid */}
       <div
         style={{
           display: 'grid',
@@ -109,7 +130,7 @@ export const DashboardPage = () => {
           value={totalProjects}
           icon={FolderKanban}
           color="var(--color-primary)"
-          subtitle="Accessible workspaces"
+          subtitle="Active workspaces"
         />
         <StatsCard
           title="Assigned Tasks"
@@ -134,7 +155,7 @@ export const DashboardPage = () => {
         />
       </div>
 
-      {/* Main Content Layout: Active Projects & Assigned Tasks */}
+      {/* Main Content Layout: Active Projects Grid & Recent Tasks List */}
       <div
         style={{
           display: 'grid',
@@ -149,3 +170,4 @@ export const DashboardPage = () => {
     </div>
   );
 };
+

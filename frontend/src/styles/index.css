@@ -905,5 +905,35 @@ button[type="submit"]:active:not(:disabled) {
   transform: translateY(0);
 }
 
+/* ==========================================================================
+   DASHBOARD UI TRANSFORMATION & MICRO-INTERACTION STYLES
+   ========================================================================== */
+
+.stats-card-item:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md) !important;
+  border-color: var(--color-border-hover) !important;
+}
+
+.project-grid-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md) !important;
+  border-color: var(--color-border-hover) !important;
+}
+
+.recent-task-row:hover {
+  background-color: var(--color-bg-subtle) !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stats-card-item,
+  .project-grid-card,
+  .recent-task-row {
+    transition: none !important;
+    transform: none !important;
+  }
+}
+
+
 
 
